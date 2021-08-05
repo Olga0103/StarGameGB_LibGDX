@@ -40,6 +40,10 @@ public class Sprite extends Rect {
 
     }
 
+    public void update(float delta){
+
+    };
+
     public boolean touchDown(Vector2 touch, int pointer, int button) {
         return false;
     }
