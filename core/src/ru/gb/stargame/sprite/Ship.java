@@ -8,136 +8,167 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 import ru.gb.stargame.base.Sprite;
 import ru.gb.stargame.math.Rect;
+import ru.gb.stargame.pool.BulletPool;
 
 public class Ship extends Sprite {
 
-    private final float MERGED = 0.15f;
-    private final float SPEED = 0.01f;
+    private static final float HEIGHT = 0.15f;
+    private static final float BOTTOM_MARGIN = 0.05f;
+    private static final int INVALID_POINTER = -1;
 
+    private final Vector2 v0 = new Vector2(0.5f, 0);
+    private final Vector2 v = new Vector2();
 
-    private final Vector2 v;
-    private Vector2 touch;
-    private final Vector2 tmp;
-    private final Vector2 resistance;
-    private final Vector2 acceleration;
+    private boolean pressedLeft;
+    private boolean pressedRight;
+
+    private int leftPointer = INVALID_POINTER;
+    private int rightPointer = INVALID_POINTER;
 
     private Rect worldBounds;
+    private BulletPool bulletPool;
+    private TextureRegion bulletRegion;
+    private Vector2 bulletPos;
+    private Vector2 bulletV;
+    private float bulletHeight;
+    private int bulletDamage;
 
-    public Ship(TextureAtlas atlas) {
-        super(new TextureRegion[]{
-                new TextureRegion(atlas.findRegion("X-Wing"), 0, 0, atlas.findRegion("X-Wing").getRegionWidth() / 2, atlas.findRegion("X-Wing").getRegionHeight()),
-                new TextureRegion(atlas.findRegion("X-Wing"), atlas.findRegion("X-Wing").getRegionWidth() / 2, 0, atlas.findRegion("X-Wing").getRegionWidth() / 2, atlas.findRegion("X-Wing").getRegionHeight()),
-                new TextureRegion(atlas.findRegion("X-Wing-turn"), 0, 0, atlas.findRegion("X-Wing-turn").getRegionWidth() / 2, atlas.findRegion("X-Wing-turn").getRegionHeight()),
-                new TextureRegion(atlas.findRegion("X-Wing-turn"), atlas.findRegion("X-Wing-turn").getRegionWidth() / 2, 0, atlas.findRegion("X-Wing-turn").getRegionWidth() / 2, atlas.findRegion("X-Wing-turn").getRegionHeight())
-        });
-
-        v = new Vector2();
-        resistance = new Vector2();
-        acceleration = new Vector2();
-
-        touch = new Vector2();
-        tmp = new Vector2();
-    }
-
-    private void acceleratedMove() {
-        v.add(acceleration).add(resistance);
-        if (tmp.x * v.x < 0) {
-            resistance.setZero();
-            v.setZero();
-        }
-        if (checkPosition()) {
-            pos.add(v);
-        } else {
-            resistance.setZero();
-        }
-    }
-
-    public void forwardMove() {
-        tmp.set(touch);
-        if (tmp.sub(pos).len() <= SPEED) {
-            pos.set(touch);
-            frame = 0;
-        } else {
-            if (checkPosition()) pos.add(v);
-        }
+    public Ship(TextureAtlas atlas, BulletPool bulletPool) {
+        super(atlas.findRegion("main_ship"), 1, 2, 2);
+        this.bulletPool = bulletPool;
+        bulletRegion = atlas.findRegion("bulletMainShip");
+        bulletPos = new Vector2();
+        bulletV = new Vector2(0, 0.5f);
+        bulletHeight = 0.01f;
+        bulletDamage = 1;
     }
 
     @Override
     public void update(float delta) {
-        if (acceleration.len() != 0 || resistance.len() != 0) {
-            acceleratedMove();
-        } else {
-            forwardMove();
+        super.update(delta);
+        pos.mulAdd(v, delta);
+//        if (getRight() > worldBounds.getRight()) {
+//            setRight(worldBounds.getRight());
+//            stop();
+//        }
+//        if (getLeft() < worldBounds.getLeft()) {
+//            setLeft(worldBounds.getLeft());
+//            stop();
+//        }
+
+        if (getLeft() > worldBounds.getRight()) {
+            setRight(worldBounds.getLeft());
+        }
+        if (getRight() < worldBounds.getLeft()) {
+            setLeft(worldBounds.getRight());
         }
     }
 
     @Override
     public void resize(Rect worldBounds) {
+        super.resize(worldBounds);
+        setHeightProportion(HEIGHT);
         this.worldBounds = worldBounds;
-        pos.set(0f, worldBounds.getBottom() + MERGED);
-        setHeightProportion(0.2f);
+        setBottom(worldBounds.getBottom() + BOTTOM_MARGIN);
     }
 
     @Override
     public boolean touchDown(Vector2 touch, int pointer, int button) {
-        resistance.setZero();
-        tmp.setZero();
-        this.touch = new Vector2(touch.x, pos.y);
-        if (touch.x < pos.x) {
-            turnLeft();
+        if (touch.x < worldBounds.pos.x) {
+            if (leftPointer != INVALID_POINTER) {
+                return false;
+            }
+            leftPointer = pointer;
+            moveLeft();
         } else {
-            turnRight();
+            if (rightPointer != INVALID_POINTER) {
+                return false;
+            }
+            rightPointer = pointer;
+            moveRight();
         }
         return false;
     }
 
-    public void keyDown(int keycode) {
+    @Override
+    public boolean touchUp(Vector2 touch, int pointer, int button) {
+        if (pointer == leftPointer) {
+            leftPointer = INVALID_POINTER;
+            if (rightPointer != INVALID_POINTER) {
+                moveRight();
+            } else {
+                stop();
+            }
+        } else if (pointer == rightPointer) {
+            rightPointer = INVALID_POINTER;
+            if (leftPointer != INVALID_POINTER) {
+                moveLeft();
+            } else {
+                stop();
+            }
+        }
+        return false;
+    }
+
+    public boolean keyDown(int keycode) {
         switch (keycode) {
+            case Input.Keys.A:
             case Input.Keys.LEFT:
-                acceleration.set(-0.0005f, 0);
-                resistance.set(0.0001f, 0);
-                frame = 2;
+                pressedLeft = true;
+                moveLeft();
                 break;
+            case Input.Keys.D:
             case Input.Keys.RIGHT:
-                acceleration.set(0.0005f, 0);
-                resistance.set(-0.0001f, 0);
-                frame = 3;
+                pressedRight = true;
+                moveRight();
                 break;
         }
-        tmp.setZero();
+        return false;
+    }
+
+    public boolean keyUp(int keycode) {
+        switch (keycode) {
+            case Input.Keys.A:
+            case Input.Keys.LEFT:
+                pressedLeft = false;
+                if (pressedRight) {
+                    moveRight();
+                } else {
+                    stop();
+                }
+                break;
+            case Input.Keys.D:
+            case Input.Keys.RIGHT:
+                pressedRight = false;
+                if (pressedLeft) {
+                    moveLeft();
+                } else {
+                    stop();
+                }
+                break;
+            case Input.Keys.UP:
+                shoot();
+                break;
+        }
+        return false;
+    }
+
+    private void moveRight() {
+        v.set(v0);
+    }
+
+    private void moveLeft() {
+        v.set(v0).rotateDeg(180);
+    }
+
+    private void stop() {
         v.setZero();
     }
 
-    public void keyUp() {
-        acceleration.setZero();
-        frame = 0;
-        acceleration.setZero();
-        tmp.set(v);
-    }
-
-    private void turnLeft() {
-        if (touch.x >= worldBounds.getLeft() + getHalfWidth()) frame = 2;
-        v.set(-SPEED, 0);
-    }
-
-    private void turnRight() {
-        if (touch.x <= worldBounds.getRight() - getHalfWidth()) frame = 3;
-        v.set(SPEED, 0);
-    }
-
-    private boolean checkPosition() {
-        if (getRight() > worldBounds.getRight()) {
-            setRight(worldBounds.getRight());
-            v.setZero();
-            frame = 0;
-            return false;
-        }
-        if (getLeft() < worldBounds.getLeft()) {
-            setLeft(worldBounds.getLeft());
-            v.setZero();
-            frame = 0;
-            return false;
-        }
-        return true;
+    private void shoot() {
+        Bullet bullet = bulletPool.obtain();
+        bulletPos.set(pos.x, pos.y + getHalfHeight());
+        bullet.set(this, bulletRegion, bulletPos, bulletV, bulletHeight, worldBounds, bulletDamage);
     }
 }
+
