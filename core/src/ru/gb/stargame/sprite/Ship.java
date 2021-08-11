@@ -1,5 +1,7 @@
 package ru.gb.stargame.sprite;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.Input;
@@ -32,6 +34,7 @@ public class Ship extends Sprite {
     private Vector2 bulletV;
     private float bulletHeight;
     private int bulletDamage;
+    private Sound soundShot;
 
     public Ship(TextureAtlas atlas, BulletPool bulletPool) {
         super(atlas.findRegion("main_ship"), 1, 2, 2);
@@ -41,6 +44,7 @@ public class Ship extends Sprite {
         bulletV = new Vector2(0, 0.5f);
         bulletHeight = 0.01f;
         bulletDamage = 1;
+        soundShot = Gdx.audio.newSound(Gdx.files.internal("sounds\\XWing-fire.wav"));
     }
 
     @Override
@@ -151,6 +155,26 @@ public class Ship extends Sprite {
                 break;
         }
         return false;
+    }
+
+    public void autoShooting(){
+        if (bulletPool.getActiveSprites().size() != 0) {
+            Bullet lastBullet = bulletPool.getActiveSprites().get(bulletPool.getActiveSprites().size() - 1);
+            if (lastBullet.getTop() >= 0) {
+                shot();
+            }
+        }else{
+            shot();
+        }
+    }
+    private void shot() {
+        soundShot.play();
+        Bullet bulletLeft = bulletPool.obtain();
+        Bullet bulletRight = bulletPool.obtain();
+        bulletPos.set(getLeft() + BOTTOM_MARGIN, getTop() - HEIGHT);
+        bulletLeft.set(this, bulletRegion, bulletPos, bulletV, 0.1f, worldBounds, 3);
+        bulletPos.set(getRight() - BOTTOM_MARGIN, getTop() - HEIGHT);
+        bulletRight.set(this, bulletRegion, bulletPos, bulletV, 0.1f, worldBounds, 3);
     }
 
     private void moveRight() {
