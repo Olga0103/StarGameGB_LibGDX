@@ -8,6 +8,7 @@ import ru.gb.stargame.math.Rect;
 import ru.gb.stargame.pool.BulletPool;
 import ru.gb.stargame.sprite.Bullet;
 
+
 public class Ship extends Sprite {
 
     protected final Vector2 v0;
