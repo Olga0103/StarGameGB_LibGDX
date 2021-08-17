@@ -8,11 +8,11 @@ import ru.gb.stargame.math.Rect;
 import ru.gb.stargame.utils.Regions;
 
 public class Sprite extends Rect {
-
     protected float angle;
     protected float scale = 1f;
     protected TextureRegion[] regions;
     protected int frame;
+
     private boolean destroyed;
 
     public Sprite() {
