@@ -25,6 +25,7 @@ public class MainShip extends Ship {
     private int leftPointer = INVALID_POINTER;
     private int rightPointer = INVALID_POINTER;
 
+
     public MainShip(TextureAtlas atlas, BulletPool bulletPool, ExplosionPool explosionPool, Sound bulletSound) {
         super(atlas.findRegion("main_ship"), 1, 2, 2);
         this.bulletPool = bulletPool;
@@ -47,6 +48,17 @@ public class MainShip extends Ship {
         rightPointer = INVALID_POINTER;
         stop();
         this.pos.x = worldBounds.pos.x;
+        flushDestroy();
+    }
+
+    public void startNewGame() {
+        this.hp = hp;
+        this.pos.x = worldBounds.pos.x;
+        stop();
+        pressedLeft = false;
+        pressedRight = false;
+        leftPointer = INVALID_POINTER;
+        rightPointer = INVALID_POINTER;
         flushDestroy();
     }
 
