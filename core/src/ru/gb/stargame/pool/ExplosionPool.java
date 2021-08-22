@@ -21,4 +21,3 @@ public class ExplosionPool extends SpritesPool<Explosion> {
         return new Explosion(atlas, explosionSound);
     }
 }
-

@@ -13,6 +13,7 @@ import ru.gb.stargame.math.Rect;
 import ru.gb.stargame.math.MatrixUtils;
 
 public class BaseScreen implements Screen, InputProcessor {
+
     protected SpriteBatch batch;
 
     private Rect screenBounds;
