@@ -9,6 +9,8 @@ import com.badlogic.gdx.math.Vector2;
 
 import java.util.List;
 
+import javax.swing.plaf.nimbus.State;
+
 import ru.gb.stargame.base.BaseScreen;
 import ru.gb.stargame.math.Rect;
 import ru.gb.stargame.pool.BulletPool;
@@ -17,7 +19,9 @@ import ru.gb.stargame.pool.ExplosionPool;
 import ru.gb.stargame.sprite.Background;
 import ru.gb.stargame.sprite.Bullet;
 import ru.gb.stargame.sprite.EnemyShip;
+import ru.gb.stargame.sprite.GameOver;
 import ru.gb.stargame.sprite.MainShip;
+import ru.gb.stargame.sprite.NewGameButton;
 import ru.gb.stargame.sprite.Star;
 import ru.gb.stargame.utils.EnemyEmitter;
 
@@ -27,6 +31,8 @@ public class GameScreen extends BaseScreen {
 
     private Texture bg;
     private Background background;
+    private GameOver gameOver;
+    private NewGameButton newGameButton;
 
     private TextureAtlas atlas;
 
@@ -40,6 +46,7 @@ public class GameScreen extends BaseScreen {
     private Sound laserSound;
     private Sound explosionSound;
     private Music music;
+
 
     private EnemyEmitter enemyEmitter;
 
@@ -67,6 +74,15 @@ public class GameScreen extends BaseScreen {
         music = Gdx.audio.newMusic(Gdx.files.internal("sounds/music.mp3"));
         music.setLooping(true);
         music.play();
+
+    }
+
+    public void startNewGame() {
+        mainShip.startNewGame();
+        bulletPool.freeAllDestroyedActiveSprites();
+        enemyPool.freeAllDestroyedActiveSprites();
+        explosionPool.freeAllDestroyedActiveSprites();
+
     }
 
     @Override
@@ -78,6 +94,7 @@ public class GameScreen extends BaseScreen {
         draw();
     }
 
+
     @Override
     public void resize(Rect worldBounds) {
         super.resize(worldBounds);
@@ -86,6 +103,8 @@ public class GameScreen extends BaseScreen {
             star.resize(worldBounds);
         }
         mainShip.resize(worldBounds);
+        gameOver.resize(worldBounds);
+        newGameButton.resize(worldBounds);
     }
 
     @Override
@@ -104,13 +123,21 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public boolean touchDown(Vector2 touch, int pointer, int button) {
-        mainShip.touchDown(touch, pointer, button);
+        if (mainShip.isDestroyed()) {
+            mainShip.touchDown(touch, pointer, button);
+        } else if (mainShip.isDestroyed()) {
+            newGameButton.touchDown(touch, pointer, button);
+        }
         return false;
     }
 
     @Override
     public boolean touchUp(Vector2 touch, int pointer, int button) {
-        mainShip.touchUp(touch, pointer, button);
+        if (mainShip.isDestroyed()) {
+            mainShip.touchUp(touch, pointer, button);
+        } else if (mainShip.isDestroyed()) {
+            newGameButton.touchUp(touch, pointer, button);
+        }
         return false;
     }
 
@@ -136,64 +163,71 @@ public class GameScreen extends BaseScreen {
             bulletPool.updateActiveSprites(delta);
             enemyPool.updateActiveSprites(delta);
             enemyEmitter.generate(delta);
+        } else if (!mainShip.isDestroyed()) {
+            newGameButton.update(delta);
         }
     }
 
-    private void checkCollisions() {
-        if (mainShip.isDestroyed()) {
-            return;
-        }
-        List<EnemyShip> enemyShipList = enemyPool.getActiveSprites();
-        for (EnemyShip enemyShip : enemyShipList) {
-            if (enemyShip.isDestroyed()) {
-                continue;
+        private void checkCollisions () {
+            if (mainShip.isDestroyed()) {
+                return;
             }
-            float minDist = enemyShip.getHalfWidth() + mainShip.getHalfWidth();
-            if (mainShip.pos.dst(enemyShip.pos) < minDist) {
-                mainShip.damage(enemyShip.getBulletDamage() * 2);
-                enemyShip.destroy();
-            }
-        }
-
-        List<Bullet> bulletList = bulletPool.getActiveSprites();
-        for (Bullet bullet : bulletList) {
-            if (bullet.isDestroyed()) {
-                continue;
-            }
+            List<EnemyShip> enemyShipList = enemyPool.getActiveSprites();
             for (EnemyShip enemyShip : enemyShipList) {
-                if (enemyShip.isDestroyed() || bullet.getOwner() != mainShip) {
+                if (enemyShip.isDestroyed()) {
                     continue;
                 }
-                if (enemyShip.isBulletCollision(bullet)) {
-                    enemyShip.damage(bullet.getDamage());
+                float minDist = enemyShip.getHalfWidth() + mainShip.getHalfWidth();
+                if (mainShip.pos.dst(enemyShip.pos) < minDist) {
+                    mainShip.damage(enemyShip.getBulletDamage() * 2);
+                    enemyShip.destroy();
+                }
+            }
+
+            List<Bullet> bulletList = bulletPool.getActiveSprites();
+            for (Bullet bullet : bulletList) {
+                if (bullet.isDestroyed()) {
+                    continue;
+                }
+                for (EnemyShip enemyShip : enemyShipList) {
+                    if (enemyShip.isDestroyed() || bullet.getOwner() != mainShip) {
+                        continue;
+                    }
+                    if (enemyShip.isBulletCollision(bullet)) {
+                        enemyShip.damage(bullet.getDamage());
+                        bullet.destroy();
+                    }
+                }
+                if (bullet.getOwner() != mainShip && mainShip.isBulletCollision(bullet)) {
+                    mainShip.damage(bullet.getDamage());
                     bullet.destroy();
                 }
             }
-            if (bullet.getOwner() != mainShip && mainShip.isBulletCollision(bullet)) {
-                mainShip.damage(bullet.getDamage());
-                bullet.destroy();
+
+        }
+
+        private void freeAllDestroyed () {
+            bulletPool.freeAllDestroyedActiveSprites();
+            explosionPool.freeAllDestroyedActiveSprites();
+            enemyPool.freeAllDestroyedActiveSprites();
+        }
+
+        private void draw () {
+            batch.begin();
+            background.draw(batch);
+            for (Star star : stars) {
+                star.draw(batch);
             }
+            if (!mainShip.isDestroyed()) {
+                mainShip.draw(batch);
+                bulletPool.drawActiveSprites(batch);
+                enemyPool.drawActiveSprites(batch);
+            }
+            explosionPool.drawActiveSprites(batch);
+            batch.end();
+        } else if (mainShip.isDestroyed()){
+            gameOver.draw(batch);
+            newGameButton.draw(batch);
         }
-    }
-
-    private void freeAllDestroyed() {
-        bulletPool.freeAllDestroyedActiveSprites();
-        explosionPool.freeAllDestroyedActiveSprites();
-        enemyPool.freeAllDestroyedActiveSprites();
-    }
-
-    private void draw() {
-        batch.begin();
-        background.draw(batch);
-        for (Star star : stars) {
-            star.draw(batch);
-        }
-        if (!mainShip.isDestroyed()) {
-            mainShip.draw(batch);
-            bulletPool.drawActiveSprites(batch);
-            enemyPool.drawActiveSprites(batch);
-        }
-        explosionPool.drawActiveSprites(batch);
-        batch.end();
     }
 }
