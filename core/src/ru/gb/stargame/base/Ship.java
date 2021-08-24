@@ -27,6 +27,7 @@ public abstract class Ship extends Sprite {
     protected int bulletDamage;
     protected Sound bulletSound;
     protected int hp;
+    protected int damage;
 
     protected float reloadInterval;
     protected float reloadTimer;
@@ -79,14 +80,26 @@ public abstract class Ship extends Sprite {
         return bulletDamage;
     }
 
+    public void setBulletPos(Vector2 bulletPos) {
+        this.bulletPos.set(bulletPos);
+    }
+
     @Override
     public void destroy() {
         super.destroy();
         boom();
     }
 
+    public int getDamage() {
+        return damage;
+    }
+
     public int getHp() {
         return hp;
+    }
+
+    public Vector2 getV() {
+        return v;
     }
 
     private void shoot() {

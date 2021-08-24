@@ -41,18 +41,18 @@ public class EnemyEmitter {
     private final TextureRegion[] enemyMediumRegions;
     private final TextureRegion[] enemyBigRegions;
 
-    private final Vector2 enemySmallV = new Vector2(0f, -0.2f);
+    private Vector2 enemySmallV = new Vector2(0f, -0.2f);
     private final Vector2 enemySmallBulletV = new Vector2(0, -0.3f);
 
-    private final Vector2 enemyMediumV = new Vector2(0f, -0.03f);
+    private Vector2 enemyMediumV = new Vector2(0f, -0.03f);
     private final Vector2 enemyMediumBulletV = new Vector2(0, -0.25f);
 
-    private final Vector2 enemyBigV = new Vector2(0f, -0.005f);
+    private Vector2 enemyBigV = new Vector2(0f, -0.005f);
     private final Vector2 enemyBigBulletV = new Vector2(0, -0.3f);
 
     private float generateTimer;
 
-    private int level;
+    private int level = 1;
 
     public EnemyEmitter(Rect worldBounds, Sound bulletSound, EnemyPool enemyPool, TextureAtlas atlas) {
         this.worldBounds = worldBounds;
@@ -62,6 +62,9 @@ public class EnemyEmitter {
         enemySmallRegions = Regions.split(atlas.findRegion("enemy0"), 1, 2, 2);
         enemyMediumRegions = Regions.split(atlas.findRegion("enemy1"), 1, 2, 2);
         enemyBigRegions = Regions.split(atlas.findRegion("enemy2"), 1, 2, 2);
+        enemySmallV = new Vector2(0, -0.2f);
+        enemyMediumV = new Vector2(0, -0.03f);
+        enemyBigV = new Vector2(0, -0.005f);
     }
 
     public void generate(float delta, int frags) {
@@ -116,6 +119,8 @@ public class EnemyEmitter {
                     worldBounds.getRight() - enemy.getHalfWidth()
             );
             enemy.setPos(posX, worldBounds.getTop());
+            enemy.setBottom(worldBounds.getTop());
+            enemy.setBulletPos(enemy.pos);
         }
     }
 

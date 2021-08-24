@@ -51,17 +51,6 @@ public class MainShip extends Ship {
         flushDestroy();
     }
 
-    public void startNewGame() {
-        this.hp = hp;
-        this.pos.x = worldBounds.pos.x;
-        stop();
-        pressedLeft = false;
-        pressedRight = false;
-        leftPointer = INVALID_POINTER;
-        rightPointer = INVALID_POINTER;
-        flushDestroy();
-    }
-
     @Override
     public void update(float delta) {
         super.update(delta);

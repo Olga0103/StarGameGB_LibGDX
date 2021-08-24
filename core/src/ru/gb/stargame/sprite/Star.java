@@ -15,12 +15,17 @@ public class Star extends Sprite {
     public Star(TextureAtlas atlas) {
         super(atlas.findRegion("star"));
         v = new Vector2();
+        float vx = Rnd.nextFloat(-0.0005f, 0.0005f);
+        float vy = Rnd.nextFloat(-0.1f, -0.05f);
+        v.set(vx, vy);
     }
 
     @Override
     public void update(float delta) {
         pos.mulAdd(v, delta);
+        pos.mulAdd(v, delta);
         checkAndHandleBounds();
+        animate(delta);
     }
 
     @Override
@@ -34,7 +39,7 @@ public class Star extends Sprite {
         v.set(Rnd.nextFloat(-0.005f, 0.005f), getHeight() * -7);
     }
 
-    private void checkAndHandleBounds() {
+    protected void checkAndHandleBounds() {
         if (getRight() < worldBounds.getLeft()) {
             setLeft(worldBounds.getRight());
         }
@@ -47,5 +52,15 @@ public class Star extends Sprite {
         if (getBottom() > worldBounds.getTop()) {
             setTop(worldBounds.getBottom());
         }
+    }
+
+
+    protected void animate(float delta) {
+        float height = getHeight();
+        height += 0.0001f;
+        if (height >= 0.012f) {
+            height = 0.008f;
+        }
+        setHeightProportion(height);
     }
 }
